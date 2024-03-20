@@ -2,13 +2,18 @@
 	"name": "mars-rover",
 	"version": "1.0.0",
 	"description": "Etrainu Mars Rover Challenge",
+	"type": "module",
 	"main": "index.ts",
 	"scripts": {
+		"main": "tsx index.ts",
 		"test": "echo \"Error: no test specified\" && exit 1"
 	},
 	"author": "Peter Wang",
 	"license": "ISC",
 	"dependencies": {
 		"readline": "^1.3.0"
+	},
+	"devDependencies": {
+		"tsx": "^4.7.1"
 	}
 }
