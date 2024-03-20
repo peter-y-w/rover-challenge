@@ -1,6 +1,14 @@
 import readlineModule from 'readline';
 
 /**
+ * Initialise CLI interface
+ */
+const rl = readlineModule.createInterface({
+	input: process.stdin,
+	output: process.stdout,
+});
+
+/**
  * Rover object
  */
 let roverObject = {
@@ -14,42 +22,30 @@ let roverObject = {
  */
 const orientations = ['NORTH', 'SOUTH', 'EAST', 'WEST'];
 
-/**
- * Creates main interface and handles inputs
- * @returns {Promise} Represents the session; resolves on close
- */
-function roverEngine() {
-	return new Promise<void>(function (resolve, reject) {
-		/** Start up CLI interface */
-		const readline = readlineModule.createInterface({
-			input: process.stdin,
-			output: process.stdout,
+const ask = (prompt: string): Promise<string> => {
+	return new Promise(resolve => {
+		rl.question(prompt, (userInput: string) => {
+			resolve(userInput);
 		});
-		readline.setPrompt('Hello, operator. Robot ready for command> ');
-		readline.prompt();
-
-		/** Process line event from CLI */
-		readline
-			.on('line', function (input) {
-				const line = input.toUpperCase();
-				readline.prompt();
-			})
-			.on('close', function () {
-				console.log('\n Rover shutting down. Goodbye, operator.');
-				resolve();
-			});
 	});
-}
+};
+
+const setUpperRight = (input: string) => {
+	console.log('input:', input, typeof input);
+};
 
 /**
  * Turns the rover on
  */
-async function runRover() {
+const runRover = async () => {
 	try {
-		await roverEngine();
+		const upperRight = await ask(
+			'Hello, operator. Please enter the upper-right coordinates of the plateau> '
+		);
+		setUpperRight(upperRight);
 	} catch (e) {
 		console.log('Error: ', e);
 	}
-}
+};
 
 runRover();
