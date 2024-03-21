@@ -1,6 +1,6 @@
 export type Plateau = {
-  x: number;
-  y: number;
+	x: number;
+	y: number;
 };
 
 export type Rover = {

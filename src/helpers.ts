@@ -18,7 +18,10 @@ export const isValidInteger = (input: number): boolean => {
 	return !isNaN(input) && input >= 0;
 };
 
-export const ask = (rl: readlineModule.Interface, prompt: string): Promise<string> => {
+export const ask = (
+	rl: readlineModule.Interface,
+	prompt: string
+): Promise<string> => {
 	return new Promise(resolve => {
 		rl.question(prompt, (userInput: string) => {
 			resolve(userInput);
