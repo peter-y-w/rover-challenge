@@ -1,5 +1,6 @@
 import readlineModule from 'readline';
 import { Plateau, Rover } from './types';
+import { allowedOrientations, removeSpaces, isValidInteger, ask, isValidCommandSet } from './helpers';
 
 /**
  * Initialise CLI interface
@@ -27,63 +28,31 @@ const rover: Rover = {
 }
 
 /**
- * Allowed values for orientation
- */
-const allowedOrientations = new Set(['N', 'S', 'E', 'W']);
-
-/**
- * Allowed values for commands
- */
-const allowedCommands = new Set(['L', 'R', 'M']);
-
-const ask = (prompt: string): Promise<string> => {
-	return new Promise(resolve => {
-		rl.question(prompt, (userInput: string) => {
-			resolve(userInput);
-		});
-	});
-};
-
-const removeSpaces = (str: string) => {
-	return str.replace(/\s/g, '');
-};
-
-const isPositiveInteger = (input: number): boolean => {
-	return !isNaN(input) && input > 0;
-};
-
-const isValidCommandSet = (commands: string[]): boolean => {
-	for (const command of commands) {
-		if (!allowedCommands.has(command)) return false;
-	}
-	return true;
-};
-
-/**
  * Prompts the user to enter the upper-right coordinates of the plateau.
  * Will ask for retry if the first two non-space characters are not usable.
  */
 const drawPlateau = async () => {
 	const input = await ask(
+    rl,
 		'Hello, operator. Please enter the upper-right coordinates of the plateau> '
 	);
 	const firstTwoCharacters = removeSpaces(input).slice(0, 2);
 	const x = parseInt(firstTwoCharacters.charAt(0));
 	const y = parseInt(firstTwoCharacters.charAt(1));
 
-	if (!isPositiveInteger(x) || !isPositiveInteger(y)) {
+	if (!isValidInteger(x) || !isValidInteger(y)) {
 		console.log('Could not detect valid coordinates. Please try again.');
 		await drawPlateau();
-	}
-
-  plateau.x = x;
-  plateau.y = y;
-
+	} else {
+    plateau.x = x;
+    plateau.y = y;
+  }
   return
 };
 
 const placeRover = async () => {
 	const input = await ask(
+    rl,
 		'Please enter the current x-coordinate, y-coordinate, and orientation of the Rover> '
 	);
 	const firstThreeCharacters = removeSpaces(input).slice(0, 3);
@@ -91,30 +60,27 @@ const placeRover = async () => {
 	const y = parseInt(firstThreeCharacters.charAt(1));
 	const inputOrientation = firstThreeCharacters.charAt(2).toUpperCase();
 
-	if (!isPositiveInteger(x) || !isPositiveInteger(y)) {
+	if (!isValidInteger(x) || !isValidInteger(y)) {
 		console.log('Could not detect valid coordinates. Please try again.');
 		await placeRover();
-	}
-
-	if (!allowedOrientations.has(inputOrientation)) {
+	} else if (!allowedOrientations.has(inputOrientation)) {
 		console.log('Could not detect valid orientation. Please try again.');
 		await placeRover();
-	}
-
-  if (x > plateau.x || y > plateau.y) {
+	} else if (x > plateau.x || y > plateau.y) {
     console.log('Could not place rover within plateau dimensions. Please try again.');
     await placeRover();
+  } else {
+    rover.x = x;
+    rover.y = y;
+    rover.orientation = inputOrientation;
   }
 
-  rover.x = x;
-  rover.y = y;
-  rover.orientation = inputOrientation;
-
-	return
+	return;
 };
 
 const runCommands = async () => {
 	const input = await ask(
+    rl,
 		'Please enter commands to move the Rover. For further details, please refer to the operator manual> '
 	);
 	const withoutSpaces = removeSpaces(input);
