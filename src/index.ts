@@ -1,4 +1,15 @@
 import readlineModule from 'readline';
+import { Plateau, Rover } from './types';
+import {
+	allowedOrientations,
+	removeSpaces,
+	isValidInteger,
+	ask,
+	isValidCommandSet,
+	turnLeft,
+	turnRight,
+	move,
+} from './helpers';
 
 /**
  * Initialise CLI interface
@@ -9,105 +20,111 @@ const rl = readlineModule.createInterface({
 });
 
 /**
- * Rover object
+ * Instantiate the plateau
  */
-let roverObject = {
-	x: undefined,
-	y: undefined,
-	orientation: undefined,
+const plateau: Plateau = {
+	x: 0,
+	y: 0,
 };
 
 /**
- * Allowed values for orientation
+ * Instantiate the rover
  */
-const allowedOrientations = new Set(['N', 'S', 'E', 'W']);
-
-/**
- * Allowed values for commands
- */
-const allowedCommands = new Set(['L', 'R', 'M']);
-
-const ask = (prompt: string): Promise<string> => {
-	return new Promise(resolve => {
-		rl.question(prompt, (userInput: string) => {
-			resolve(userInput);
-		});
-	});
-};
-
-const removeSpaces = (str: string) => {
-	return str.replace(/\s/g, '');
-};
-
-const isValidInteger = (character: string): boolean => {
-	const parsedInt = parseInt(character);
-	return !isNaN(parsedInt);
-};
-
-const isValidCommandSet = (commands: string[]): boolean => {
-	for (const command of commands) {
-		if (!allowedCommands.has(command)) return false;
-	}
-	return true;
+let rover: Rover = {
+	x: 0,
+	y: 0,
+	orientation: '',
 };
 
 /**
- * Prompts the user to enter the upper-right coordinates of the plateau.
- * Will ask for retry if the first two non-space characters are not usable.
+ * Prompts the user to enter the upper-right coordinates of the plateau
+ * Will ask for retry if the first two non-space characters are not usable
  */
-const drawPlateauBoundary = async () => {
+const drawPlateau = async () => {
 	const input = await ask(
+		rl,
 		'Hello, operator. Please enter the upper-right coordinates of the plateau> '
 	);
 	const firstTwoCharacters = removeSpaces(input).slice(0, 2);
-	const x = firstTwoCharacters.charAt(0);
-	const y = firstTwoCharacters.charAt(1);
+	const x = parseInt(firstTwoCharacters.charAt(0));
+	const y = parseInt(firstTwoCharacters.charAt(1));
 
 	if (!isValidInteger(x) || !isValidInteger(y)) {
 		console.log('Could not detect valid coordinates. Please try again.');
-		await drawPlateauBoundary();
+		await drawPlateau();
+	} else {
+		plateau.x = x;
+		plateau.y = y;
 	}
-
 	return;
 };
 
-const setCurrentPosition = async () => {
+/**
+ * Prompts the user to enter the current position of the rover
+ * Will ask for retry if input is invalid
+ */
+const placeRover = async () => {
 	const input = await ask(
-		'Please enter the current x-coordinate, y-coordinate, and orientation of the Rover> '
+		rl,
+		'Please enter the current x-coordinate, y-coordinate, and orientation of the rover> '
 	);
 	const firstThreeCharacters = removeSpaces(input).slice(0, 3);
-	const x = firstThreeCharacters.charAt(0);
-	const y = firstThreeCharacters.charAt(1);
-	const orientation = firstThreeCharacters.charAt(2).toUpperCase();
+	const x = parseInt(firstThreeCharacters.charAt(0));
+	const y = parseInt(firstThreeCharacters.charAt(1));
+	const inputOrientation = firstThreeCharacters.charAt(2).toUpperCase();
 
 	if (!isValidInteger(x) || !isValidInteger(y)) {
 		console.log('Could not detect valid coordinates. Please try again.');
-		await setCurrentPosition();
-	}
-
-	//TODO: handle if current position out of bounds
-
-	if (!allowedOrientations.has(orientation)) {
-		console.log(orientation);
+		await placeRover();
+	} else if (!allowedOrientations.has(inputOrientation)) {
 		console.log('Could not detect valid orientation. Please try again.');
-		await setCurrentPosition();
+		await placeRover();
+	} else if (x > plateau.x || y > plateau.y) {
+		console.log(
+			'Could not place rover within plateau dimensions. Please try again.'
+		);
+		await placeRover();
+	} else {
+		rover.x = x;
+		rover.y = y;
+		rover.orientation = inputOrientation;
 	}
 
 	return;
 };
 
+/**
+ * Prompts the user for a list of commands
+ * Will ask for retry if commands are not valid
+ */
 const runCommands = async () => {
 	const input = await ask(
+		rl,
 		'Please enter commands to move the Rover. For further details, please refer to the operator manual> '
 	);
-	const withoutSpaces = removeSpaces(input);
+	const withoutSpaces = removeSpaces(input.toUpperCase());
 	const commands = withoutSpaces.split('');
 
 	if (!isValidCommandSet(commands)) {
 		console.log('Invalid command set supplied. Please try again.');
 		await runCommands();
+	} else {
+		for (const command of commands) {
+			switch (command) {
+				case 'L':
+					rover.orientation = turnLeft(rover.orientation);
+					break;
+				case 'R':
+					rover.orientation = turnRight(rover.orientation);
+					break;
+				case 'M':
+					rover = move(plateau, rover);
+					break;
+				default:
+					break;
+			}
+		}
 	}
-
 	return;
 };
 
@@ -115,9 +132,17 @@ const runCommands = async () => {
  * Turns the rover on
  */
 const runRover = async () => {
-	await drawPlateauBoundary();
-	await setCurrentPosition();
-	await runCommands();
+	try {
+		await drawPlateau();
+		await placeRover();
+		await runCommands();
+		console.log('Thank you, operator. Reporting new rover position:');
+		console.log(`${rover.x} ${rover.y} ${rover.orientation}`);
+		process.exit(0);
+	} catch (e) {
+		console.log(e);
+		process.exit(1);
+	}
 };
 
 runRover();
